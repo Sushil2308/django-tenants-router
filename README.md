@@ -469,3 +469,7 @@ python manage.py migrate_all_tenants --parallel --workers 4
 ## License
 
 MIT
+
+## Stable Version
+
+django_tenants_router-1.0.2
