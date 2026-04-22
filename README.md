@@ -451,9 +451,9 @@ python manage.py migrate_all_tenants --parallel --workers 4
 
 - **Passwords in DB**:
   - *Step 1*
-        ```bash
-        from cryptography.fernet import Fernet
-        print(Fernet.generate_key().decode())
+    ```bash
+    from cryptography.fernet import Fernet
+    print(Fernet.generate_key().decode())
     ```
   - *Step 2*
     ```bash
