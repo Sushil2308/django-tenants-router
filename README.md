@@ -115,8 +115,6 @@ TENANT_ROUTER_CONFIG = {
     "CACHE_TTL": 300,                          # seconds
     "CACHE_KEY_PREFIX": "tenants",
     "TENANT_HEADER": "HTTP_X_TENANT_ID",       # HTTP header (Django META format)
-    "TENANT_QUERY_PARAM": "tenant_id",         # fallback: ?tenant_id=...
-    "TENANT_SESSION_KEY": "tenant_id",         # fallback: session["tenant_id"]
     "TENANT_REQUIRED": False,                  # True → return 400/403 if no tenant
     "TENANT_EXEMPT_PATHS": ["/admin/", "/health/"],
     "COMMON_APPS": ("admin", "auth", "contenttypes", "sessions") # Add the applications which you want migrate as common
@@ -162,8 +160,6 @@ All ORM calls in that request now automatically hit the ACME tenant database.
 | `CACHE_TTL` | `300` | Cache TTL in seconds. |
 | `CACHE_KEY_PREFIX` | `"tenants"` | Redis key namespace. |
 | `TENANT_HEADER` | `"HTTP_X_TENANT_ID"` | Django META header name (HTTP_* format). |
-| `TENANT_QUERY_PARAM` | `"tenant_id"` | URL query parameter name. |
-| `TENANT_SESSION_KEY` | `"tenant_id"` | Session key. |
 | `TENANT_REQUIRED` | `False` | Reject requests with no resolvable tenant. |
 | `TENANT_EXEMPT_PATHS` | `["/admin/", "/health/"]` | Paths that bypass tenant resolution. |
 | `ENCRYPTION_DECYPTION_KEY` | `Generated Key` | Pass you Fernet Key to Encrypt/Decrypt Tenants DB Passwords
