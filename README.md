@@ -462,8 +462,7 @@ python manage.py migrate_all_tenants --parallel --workers 4
     }
     ```
 - **Cross-tenant isolation**: The router blocks cross-tenant ORM relations at the `allow_relation` level.
-- **TENANT_REQUIRED**: Set to `True` in production APIs so unauthenticated callers cannot accidentally hit the default DB.
-- **Redis eviction policy**: Set `maxmemory-policy allkeys-lru` in Redis so cache keys are evicted gracefully under memory pressure.
+- **TENANT_REQUIRED**: Set to `True` in all environment APIs so unauthenticated callers cannot accidentally hit the default DB if set to `False` then then that will not work.
 
 ---
 
