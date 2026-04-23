@@ -17,6 +17,7 @@ class TenantDatabaseConfigInline(admin.StackedInline):
         "conn_max_age",
         "is_active",
         "options",
+        "atomic_request",
         "auto_commit",
         "conn_health_check",
         "time_zone",
