@@ -21,6 +21,7 @@ def with_tenant(tenant_id_kwarg: str = "tenant_id"):
             orders = Order.objects.all()  # runs on tenant DB
             ...
     """
+
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -30,10 +31,13 @@ def with_tenant(tenant_id_kwarg: str = "tenant_id"):
             db_alias = TenantRegistry.get_db_for_tenant_id(str(tenant_id))
             if not db_alias:
                 from django.http import JsonResponse
+
                 return JsonResponse({"error": f"Tenant '{tenant_id}' not found."}, status=404)
             with tenant_db_context(db_alias):
                 return func(*args, **kwargs)
+
         return wrapper
+
     return decorator
 
 
@@ -47,6 +51,7 @@ def with_tenant_slug(slug_kwarg: str = "tenant_slug"):
         def my_view(request, tenant_slug):
             ...
     """
+
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -56,10 +61,13 @@ def with_tenant_slug(slug_kwarg: str = "tenant_slug"):
             db_alias = TenantRegistry.get_db_for_slug(slug)
             if not db_alias:
                 from django.http import JsonResponse
+
                 return JsonResponse({"error": f"Tenant '{slug}' not found."}, status=404)
             with tenant_db_context(db_alias):
                 return func(*args, **kwargs)
+
         return wrapper
+
     return decorator
 
 
@@ -73,6 +81,7 @@ def for_each_tenant(exclude_root: bool = True):
         def sync_data(db_alias: str):
             MyModel.objects.using(db_alias).update(synced=True)
     """
+
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -81,5 +90,7 @@ def for_each_tenant(exclude_root: bool = True):
                 with tenant_db_context(alias):
                     results[alias] = func(*args, db_alias=alias, **kwargs)
             return results
+
         return wrapper
+
     return decorator

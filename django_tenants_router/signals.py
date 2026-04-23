@@ -29,6 +29,7 @@ def on_tenant_saved(sender, instance, created, **kwargs):
     else:
         TenantRegistry.unregister(instance.slug)
         from django_tenants_router.cache import invalidate_tenant
+
         invalidate_tenant(str(instance.id))
         tenant_deactivated.send(sender=sender, tenant=instance)
 

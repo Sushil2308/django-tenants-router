@@ -67,7 +67,9 @@ try:
                 raise PermissionDenied("tenant_id is required.")
 
             # 3. Cache → registry → 404.
-            alias = get_cached_tenant_db(str(tenant_id)) or TenantRegistry.get_db_for_tenant_id(str(tenant_id))
+            alias = get_cached_tenant_db(str(tenant_id)) or TenantRegistry.get_db_for_tenant_id(
+                str(tenant_id)
+            )
             if not alias:
                 raise NotFound(f"Tenant '{tenant_id}' not found.")
 
@@ -95,6 +97,7 @@ try:
 
     class TenantReadOnlyViewSet(viewsets.ReadOnlyModelViewSet, TenantModelViewSet):
         """Read-only variant of TenantModelViewSet."""
+
         pass
 
 except ImportError:

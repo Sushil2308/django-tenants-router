@@ -9,4 +9,5 @@ class DjangoTenantsRouterConfig(AppConfig):
     def ready(self):
         from django_tenants_router import signals  # noqa: F401
         from django_tenants_router.registry import TenantRegistry
+
         TenantRegistry.load_from_db()

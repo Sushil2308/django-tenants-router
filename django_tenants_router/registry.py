@@ -39,7 +39,12 @@ class _TenantRegistry:
 
         try:
             from django_tenants_router.models import Tenant
-            tenants = list(Tenant.objects.using(self._root_db).filter(is_active=True).select_related("db_config"))
+
+            tenants = list(
+                Tenant.objects.using(self._root_db)
+                .filter(is_active=True)
+                .select_related("db_config")
+            )
         except Exception as exc:
             # Table may not exist yet (first migration).
             logger.warning("TenantRegistry: could not load tenants – %s", exc)

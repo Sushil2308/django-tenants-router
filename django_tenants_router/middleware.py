@@ -85,9 +85,7 @@ class TenantMiddleware:
 
     def _resolve_tenant_id(self, request) -> str:
         """Try each resolver in order and return the first tenant_id found."""
-        return (
-            self._from_header(request)
-        )
+        return self._from_header(request)
 
     def _from_header(self, request) -> str:
         return request.META.get(self.header_name, "").strip() or ""
@@ -109,9 +107,12 @@ class TenantMiddleware:
         # 3. Fallback: query root DB (handles freshly created tenants)
         try:
             from django_tenants_router.models import TenantDatabaseConfig
-            cfg = TenantDatabaseConfig.objects.using(
-                _router_cfg().get("ROOT_DB", "default")
-            ).select_related("tenant").get(tenant__id=tenant_id, tenant__is_active=True)
+
+            cfg = (
+                TenantDatabaseConfig.objects.using(_router_cfg().get("ROOT_DB", "default"))
+                .select_related("tenant")
+                .get(tenant__id=tenant_id, tenant__is_active=True)
+            )
             TenantRegistry.register(cfg.tenant)
             alias = cfg.tenant.db_alias
             cache_tenant_db(tenant_id, alias)
@@ -140,7 +141,9 @@ class AsyncTenantMiddleware:
         tenant_id = request.META.get(self.header_name, "").strip()
 
         if tenant_id:
-            alias = get_cached_tenant_db(tenant_id) or TenantRegistry.get_db_for_tenant_id(tenant_id)
+            alias = get_cached_tenant_db(tenant_id) or TenantRegistry.get_db_for_tenant_id(
+                tenant_id
+            )
             if alias:
                 set_tenant_db(alias)
                 request.tenant_id = tenant_id

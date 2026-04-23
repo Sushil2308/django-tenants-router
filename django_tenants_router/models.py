@@ -2,6 +2,8 @@ import uuid
 from django.db import models
 from django.utils import timezone
 from django.conf import settings
+from zoneinfo import available_timezones
+
 
 class Tenant(models.Model):
     """
@@ -74,6 +76,16 @@ class TenantDatabaseConfig(models.Model):
         help_text="Persistent connection timeout in seconds (0 = close after each request).",
     )
     is_active = models.BooleanField(default=True)
+    atomic_request = models.BooleanField(default=True)
+    auto_commit = models.BooleanField(default=False)
+    conn_health_check = models.BooleanField(default=True)
+    time_zone = models.CharField(
+        max_length=200,
+        choices=[(tz, tz) for tz in sorted(available_timezones())],
+        null=False,
+        blank=False,
+        default="UTC",
+    )
 
     class Meta:
         app_label = "django_tenants_router"
@@ -82,29 +94,29 @@ class TenantDatabaseConfig(models.Model):
     def __str__(self):
         return f"DB config for {self.tenant.name}"
 
-
     def to_django_db_dict(self) -> dict:
         """Returns a Django DATABASES-compatible dict for this tenant."""
+        db_password = self.db_password
         tenantConfig = getattr(settings, "TENANT_ROUTER_CONFIG", {})
-        if tenantConfig.get("ENCRYPTION_DECYPTION_DB_PASSWORD", False):
+        if tenantConfig.get("ENCRYPTION_DECYPTION_KEY"):
             from cryptography.fernet import Fernet
+
             key = tenantConfig.get("ENCRYPTION_DECYPTION_KEY")
             if key:
                 cipher = Fernet(key)
-                self.db_password = cipher.decrypt(self.db_password).decode()
-        
+                db_password = cipher.decrypt(self.db_password).decode()
         return {
             "ENGINE": self.engine,
             "NAME": self.db_name,
             "USER": self.db_user,
-            "PASSWORD": self.db_password,
+            "PASSWORD": db_password,
             "HOST": self.host,
             "PORT": str(self.port),
             "CONN_MAX_AGE": self.conn_max_age,
             "OPTIONS": self.options,
             "TEST": {"NAME": f"test_{self.db_name}"},
-            "ATOMIC_REQUESTS": False,
-            "AUTOCOMMIT": True,
-            "TIME_ZONE": None,
-            "CONN_HEALTH_CHECKS": True
+            "ATOMIC_REQUESTS": self.atomic_request,
+            "AUTOCOMMIT": self.auto_commit,
+            "TIME_ZONE": self.time_zone,
+            "CONN_HEALTH_CHECKS": self.conn_health_check,
         }

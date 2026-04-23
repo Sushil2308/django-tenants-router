@@ -135,8 +135,10 @@ class TenantDatabaseRouter:
         if db1 and db2 and db1 != db2:
             logger.warning(
                 "Cross-tenant relation blocked: %s (db=%s) <-> %s (db=%s)",
-                type(obj1).__name__, db1,
-                type(obj2).__name__, db2,
+                type(obj1).__name__,
+                db1,
+                type(obj2).__name__,
+                db2,
             )
             return False
         return True

@@ -181,7 +181,7 @@ Request arrives
      │
      ▼
 TenantMiddleware
-     │  resolves tenant_id from: header → JWT → query param → session
+     │  resolves tenant_id from: header
      │
      ├─ Redis hit?  →  db_alias  ─────────────────────────────────┐
      ├─ Registry hit?  →  db_alias + write to Redis  ─────────────┤
@@ -472,4 +472,4 @@ MIT
 
 ## Stable Version
 
-django_tenants_router-1.0.2
+django_tenants_router-1.0.4

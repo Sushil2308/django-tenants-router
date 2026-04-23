@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 try:
     import redis as redis_lib
+
     _REDIS_LIB_AVAILABLE = True
 except ImportError:
     redis_lib = None
@@ -35,7 +36,9 @@ def _get_redis():
         return None
 
     try:
-        _REDIS_CLIENT = redis_lib.Redis.from_url(redis_url, decode_responses=True, socket_connect_timeout=1)
+        _REDIS_CLIENT = redis_lib.Redis.from_url(
+            redis_url, decode_responses=True, socket_connect_timeout=1
+        )
         _REDIS_CLIENT.ping()
         _REDIS_AVAILABLE = True
         logger.info("TenantCache: Redis connected at %s", redis_url)
