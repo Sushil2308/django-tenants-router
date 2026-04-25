@@ -14,7 +14,6 @@ A production-ready Django library for **multi-tenant database routing** with a R
 6. [Management Commands](#management-commands)
 7. [Middleware](#middleware)
 8. [Context Managers & Decorators](#context-managers--decorators)
-9. [DRF Integration](#drf-integration)
 10. [Redis Caching](#redis-caching)
 11. [Testing](#testing)
 12. [Admin Interface](#admin-interface)
@@ -78,7 +77,7 @@ pip install "django-tenants-router[all]"
 
 ## Quick Start
 
-### 1. Add to `INSTALLED_APPS`
+### Add to `INSTALLED_APPS`
 
 ```python
 INSTALLED_APPS = [
@@ -87,7 +86,7 @@ INSTALLED_APPS = [
 ]
 ```
 
-### 2. Configure settings
+### Configure settings
 
 ```python
 DATABASES = {
@@ -121,13 +120,13 @@ TENANT_ROUTER_CONFIG = {
 }
 ```
 
-### 3. Run root DB migrations
+### Run root DB migrations
 
 ```bash
 python manage.py migrate          # migrates root DB (default) only
 ```
 
-### 4. Create your first tenant
+### Create your first tenant
 
 ```bash
 python manage.py create_tenant \
@@ -140,7 +139,7 @@ python manage.py create_tenant \
     --run-migrations
 ```
 
-### 5. Make API calls with tenant ID in header
+### Make API calls with tenant ID in header
 
 ```http
 GET /api/orders/
@@ -149,22 +148,21 @@ X-Tenant-ID: <tenant-uuid>
 
 All ORM calls in that request now automatically hit the ACME tenant database.
 
+
+## Configuration references
 ---
 
-## Configuration Reference
-
-| Key | Default | Description |
-|-----|---------|-------------|
-| `ROOT_DB` | `"default"` | Django DB alias for the root / router database. |
-| `REDIS_URL` | `None` | Redis connection URL. Omit to disable caching. |
-| `CACHE_TTL` | `300` | Cache TTL in seconds. |
-| `CACHE_KEY_PREFIX` | `"tenants"` | Redis key namespace. |
-| `TENANT_HEADER` | `"HTTP_X_TENANT_ID"` | Django META header name (HTTP_* format). |
-| `TENANT_REQUIRED` | `False` | Reject requests with no resolvable tenant. |
-| `TENANT_EXEMPT_PATHS` | `["/admin/", "/health/"]` | Paths that bypass tenant resolution. |
-| `ENCRYPTION_DECYPTION_KEY` | `Generated Key` | Pass you Fernet Key to Encrypt/Decrypt Tenants DB Passwords
-| `COMMON_APPS`|  `("admin", "auth", "contenttypes", "sessions")` | Here you need to define the app names which will use as a common to migrate in both root db and tenant db as well
----
+| Key                      | Default                                       | Description                     |
+| ------------------------ | --------------------------------------------- | ------------------------------- |
+| ROOT_DB                  | "default"                                     | Root database alias             |
+| REDIS_URL                | None                                          | Redis connection URL            |
+| CACHE_TTL                | 300                                           | Cache duration (seconds)        |
+| CACHE_KEY_PREFIX         | "tenants"                                     | Redis key prefix                |
+| TENANT_HEADER            | "HTTP_X_TENANT_ID"                            | Request header                  |
+| TENANT_REQUIRED          | True                                         | Enforce tenant presence         |
+| TENANT_EXEMPT_PATHS      | ["/admin/", "/health/"]                       | Bypass paths                    |
+| ENCRYPTION_DECYPTION_KEY | Strict manually-generated                                | Key for encrypting DB passwords |
+| COMMON_APPS              | ("admin", "auth", "contenttypes", "sessions") | Shared apps                     |
 
 ## How It Works
 
@@ -173,6 +171,7 @@ All ORM calls in that request now automatically hit the ACME tenant database.
 1. `DjangoTenantsRouterConfig.ready()` fires.
 2. `TenantRegistry.load_from_db()` reads all active `Tenant` + `TenantDatabaseConfig` rows from the root DB.
 3. Each tenant's DB config is injected into `settings.DATABASES` and Django's connection handler.
+4. Skip tenants whose database configurations are incorrect (ensure after hitting ensure connection).
 
 ### Per-request flow
 
@@ -310,27 +309,6 @@ def send_daily_report(db_alias):
     users = User.objects.using(db_alias).filter(active=True)
     ...
 ```
-
----
-
-## DRF Integration
-
-```python
-from django_tenants_router.drf import TenantModelViewSet, TenantPermission
-
-class OrderViewSet(TenantModelViewSet):
-    serializer_class = OrderSerializer
-    queryset = Order.objects.all()
-    # All queryset operations are automatically scoped to the tenant DB.
-    # Response includes _tenant metadata (id, plan).
-```
-
-URL pattern:
-
-```python
-router.register(r"tenants/(?P<tenant_id>[^/.]+)/orders", OrderViewSet)
-```
-
 ---
 
 ## Redis Caching
@@ -428,6 +406,7 @@ The Django admin includes:
 - **Tenant list** with live DB connectivity badge.
 - **Inline DB config editor** on the Tenant change page.
 - **Bulk actions**: activate, deactivate, flush Redis cache.
+**Connection management**: On each update to any tenant database configuration, the system will refresh the database connection from *InMemory*, *Redis*, and the *Django Connection Manager*. It will also refresh the Admin UI.
 
 ---
 
@@ -449,7 +428,7 @@ python manage.py migrate_all_tenants --parallel --workers 4
 
 ## Security Notes
 
-- **Passwords in DB**:
+- **Passwords in DB**: Without encryption/decryption key it won't work
   - *Step 1*
     ```bash
     from cryptography.fernet import Fernet
@@ -461,8 +440,7 @@ python manage.py migrate_all_tenants --parallel --workers 4
         "ENCRYPTION_DECYPTION_KEY": "bkey.....="
     }
     ```
-- **Cross-tenant isolation**: The router blocks cross-tenant ORM relations at the `allow_relation` level.
-- **TENANT_REQUIRED**: Set to `True` in all environment APIs so unauthenticated callers cannot accidentally hit the default DB if set to `False` then then that will not work.
+- **TENANT_REQUIRED**: Strictly Set to `True` in all environment APIs so unauthenticated callers cannot accidentally hit the default DB if set to `False` then then that will not work.
 
 ---
 
@@ -472,4 +450,4 @@ MIT
 
 ## Stable Version
 
-django_tenants_router-1.0.5
+django_tenants_router-1.0.6

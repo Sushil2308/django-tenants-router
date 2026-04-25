@@ -3,7 +3,6 @@ from django.utils.html import format_html
 
 from django_tenants_router.models import Tenant, TenantDatabaseConfig
 
-
 class TenantDatabaseConfigInline(admin.StackedInline):
     model = TenantDatabaseConfig
     extra = 0
@@ -42,13 +41,13 @@ class TenantAdmin(admin.ModelAdmin):
 
     def db_status_badge(self, obj):
         from django.db import connections
-
+        
         try:
             with connections[obj.db_alias].cursor() as cursor:
                 cursor.execute("SELECT 1")
             return format_html('<span style="color:green;font-weight:bold;">✓ Connected</span>')
-        except Exception:
-            return format_html('<span style="color:red;font-weight:bold;">✗ Unreachable</span>')
+        except Exception as e:
+            return format_html(f'<span title="{str(e)}" style="color:red;font-weight:bold;">✗ Unreachable</span>')
 
     db_status_badge.short_description = "DB Status"
 

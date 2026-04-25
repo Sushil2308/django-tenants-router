@@ -56,14 +56,26 @@ class Command(BaseCommand):
         db_user = options["db_user"] or self._prompt("DB user", "postgres")
         db_password = options["db_password"] or self._prompt("DB password")
         db_engine = options["db_engine"]
-
+        """
+        Note:
+            For security reasons, database passwords must never be stored or transmitted in plain text.
+            Encryption ensures that sensitive credentials remain protected from unauthorized access.
+            Here, the password is decrypted at runtime using a secure key, which is mandatory for
+            maintaining confidentiality and safeguarding tenant data.
+        """
         tenantConfig = getattr(settings, "TENANT_ROUTER_CONFIG", {})
-        if tenantConfig.get("ENCRYPTION_DECYPTION_DB_PASSWORD", False):
-            from cryptography.fernet import Fernet
-            key = tenantConfig.get("ENCRYPTION_DECYPTION_KEY")
-            if key:
-                cipher = Fernet(key)
-                db_password = cipher.encrypt(db_password.encode()).decode()
+        if not tenantConfig.get("ENCRYPTION_DECYPTION_KEY"):
+            raise ValueError("Encryption key is required to enable security on databse password")
+        
+        from cryptography.fernet import Fernet
+        try:
+            cipher = Fernet(tenantConfig.get("ENCRYPTION_DECYPTION_KEY"))
+            db_password = cipher.encrypt(db_password.encode()).decode()
+        except:
+            raise Exception("Invalid key, provide a valid key")
+        
+        if Tenant.objects.filter(slug=slug).exists():
+            raise ValueError(f"Duplicate slug: {slug}, pls use unique")
         
         # Create Tenant in root DB
         tenant = Tenant.objects.using(root_db).create(
@@ -74,6 +86,9 @@ class Command(BaseCommand):
             is_active=True,
         )
 
+        if TenantDatabaseConfig.objects.filter(tenant=tenant).exists():
+            raise ValueError(f"Already configured DB for : {slug}")
+        
         TenantDatabaseConfig.objects.using(root_db).create(
             tenant=tenant,
             engine=db_engine,

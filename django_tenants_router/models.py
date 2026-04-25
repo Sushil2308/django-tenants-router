@@ -4,7 +4,6 @@ from django.utils import timezone
 from django.conf import settings
 from zoneinfo import available_timezones
 
-
 class Tenant(models.Model):
     """
     Represents a tenant in the system.
@@ -38,6 +37,7 @@ class Tenant(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.slug})"
+
 
     @property
     def db_alias(self):
@@ -76,8 +76,8 @@ class TenantDatabaseConfig(models.Model):
         help_text="Persistent connection timeout in seconds (0 = close after each request).",
     )
     is_active = models.BooleanField(default=True)
-    atomic_request = models.BooleanField(default=True)
-    auto_commit = models.BooleanField(default=False)
+    atomic_request = models.BooleanField(default=False)
+    auto_commit = models.BooleanField(default=True)
     conn_health_check = models.BooleanField(default=True)
     time_zone = models.CharField(
         max_length=200,
@@ -95,16 +95,26 @@ class TenantDatabaseConfig(models.Model):
         return f"DB config for {self.tenant.name}"
 
     def to_django_db_dict(self) -> dict:
-        """Returns a Django DATABASES-compatible dict for this tenant."""
+        """
+            Returns a Django DATABASES-compatible dict for this tenant.
+            Note:
+                For security reasons, database passwords must never be stored or transmitted in plain text.
+                Encryption ensures that sensitive credentials remain protected from unauthorized access.
+                Here, the password is decrypted at runtime using a secure key, which is mandatory for
+                maintaining confidentiality and safeguarding tenant data.
+        """
         db_password = self.db_password
         tenantConfig = getattr(settings, "TENANT_ROUTER_CONFIG", {})
-        if tenantConfig.get("ENCRYPTION_DECYPTION_KEY"):
-            from cryptography.fernet import Fernet
-
-            key = tenantConfig.get("ENCRYPTION_DECYPTION_KEY")
-            if key:
-                cipher = Fernet(key)
-                db_password = cipher.decrypt(self.db_password).decode()
+        if not tenantConfig.get("ENCRYPTION_DECYPTION_KEY"):
+            raise ValueError("Encryption key is required to enable security on databse password")
+        
+        from cryptography.fernet import Fernet
+        try:
+            cipher = Fernet(tenantConfig.get("ENCRYPTION_DECYPTION_KEY"))
+            db_password = cipher.decrypt(self.db_password).decode()
+        except:
+            pass
+        
         return {
             "ENGINE": self.engine,
             "NAME": self.db_name,
