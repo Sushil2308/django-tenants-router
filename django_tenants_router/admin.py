@@ -2,6 +2,8 @@ from django.contrib import admin
 from django.utils.html import format_html
 
 from django_tenants_router.models import Tenant, TenantDatabaseConfig
+from django.core.management import call_command
+from django.contrib import messages
 
 class TenantDatabaseConfigInline(admin.StackedInline):
     model = TenantDatabaseConfig
@@ -48,10 +50,11 @@ class TenantAdmin(admin.ModelAdmin):
             return format_html('<span style="color:green;font-weight:bold;">✓ Connected</span>')
         except Exception as e:
             return format_html(f'<span title="{str(e)}" style="color:red;font-weight:bold;">✗ Unreachable</span>')
-
+    
+    
     db_status_badge.short_description = "DB Status"
 
-    actions = ["deactivate_tenants", "activate_tenants", "flush_tenant_cache"]
+    actions = ["deactivate_tenants", "activate_tenants", "flush_tenant_cache", "migrate_tenants"]
 
     @admin.action(description="Deactivate selected tenants")
     def deactivate_tenants(self, request, queryset):
@@ -68,3 +71,20 @@ class TenantAdmin(admin.ModelAdmin):
         for tenant in queryset:
             invalidate_tenant(str(tenant.id))
         self.message_user(request, f"Cache flushed for {queryset.count()} tenant(s).")
+    
+    @admin.action(description="Run tenant migration")
+    def migrate_tenants(modeladmin, request, queryset):
+        for obj in queryset:
+            try:
+                call_command("migrate_tenant", tenant_db=obj.db_alias)
+                modeladmin.message_user(
+                    request,
+                    f"{obj} migrated successfully",
+                    messages.SUCCESS
+                )
+            except Exception as e:
+                modeladmin.message_user(
+                    request,
+                    f"{obj} migration failed: {str(e)}",
+                    messages.ERROR
+                )
