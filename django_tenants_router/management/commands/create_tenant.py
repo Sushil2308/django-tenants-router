@@ -43,6 +43,7 @@ class Command(BaseCommand):
         from django.conf import settings
         from django_tenants_router.models import Tenant, TenantDatabaseConfig
         from django_tenants_router.registry import TenantRegistry
+        from django.db import transaction
 
         root_db = getattr(settings, "TENANT_ROUTER_CONFIG", {}).get("ROOT_DB", "default")
 
@@ -74,36 +75,37 @@ class Command(BaseCommand):
         except:
             raise Exception("Invalid key, provide a valid key")
         
-        if Tenant.objects.filter(slug=slug).exists():
-            raise ValueError(f"Duplicate slug: {slug}, pls use unique")
-        
-        # Create Tenant in root DB
-        tenant = Tenant.objects.using(root_db).create(
-            name=name,
-            slug=slug,
-            schema_name=schema_name,
-            plan=options["plan"],
-            is_active=True,
-        )
+        with transaction.atomic():
+            if Tenant.objects.filter(slug=slug).exists():
+                raise ValueError(f"Duplicate slug: {slug}, pls use unique")
+            
+            # Create Tenant in root DB
+            tenant = Tenant.objects.using(root_db).create(
+                name=name,
+                slug=slug,
+                schema_name=schema_name,
+                plan=options["plan"],
+                is_active=True,
+            )
 
-        if TenantDatabaseConfig.objects.filter(tenant=tenant).exists():
-            raise ValueError(f"Already configured DB for : {slug}")
-        
-        TenantDatabaseConfig.objects.using(root_db).create(
-            tenant=tenant,
-            engine=db_engine,
-            host=db_host,
-            port=db_port,
-            db_name=db_name,
-            db_user=db_user,
-            db_password=db_password,
-        )
+            if TenantDatabaseConfig.objects.filter(tenant=tenant).exists():
+                raise ValueError(f"Already configured DB for : {slug}")
+            
+            TenantDatabaseConfig.objects.using(root_db).create(
+                tenant=tenant,
+                engine=db_engine,
+                host=db_host,
+                port=db_port,
+                db_name=db_name,
+                db_user=db_user,
+                db_password=db_password,
+            )
 
-        # Register dynamically
-        TenantRegistry.register(tenant)
+            # Register dynamically
+            TenantRegistry.register(tenant)
 
-        self.stdout.write(self.style.SUCCESS(f"\n✓ Tenant '{name}' created (id={tenant.id})."))
+            self.stdout.write(self.style.SUCCESS(f"\n✓ Tenant '{name}' created (id={tenant.id})."))
 
-        if options["run_migrations"]:
-            self.stdout.write(f"\nRunning migrations on '{schema_name}'...")
-            call_command("migrate_tenant", tenant_db=schema_name, verbosity=options["verbosity"])
+            if options["run_migrations"]:
+                self.stdout.write(f"\nRunning migrations on '{schema_name}'...")
+                call_command("migrate_tenant", tenant_db=schema_name, verbosity=options["verbosity"])
