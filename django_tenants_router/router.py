@@ -83,9 +83,7 @@ def tenant_context_by_id(tenant_id: str):
 # The Router
 # ---------------------------------------------------------------------------
 
-ROUTER_APP_LABEL = "django_tenants_router"
-COMMON_APPS = getattr(settings, "TENANT_ROUTER_CONFIG", {}).get("COMMON_APPS" ,[])
-
+ROUTER_APP_LABEL = ["django_tenants_router"] + getattr(settings, "TENANT_ROUTER_CONFIG", {}).get("ROUTER_APPS" ,[])
 
 class TenantDatabaseRouter:
     """
@@ -149,9 +147,7 @@ class TenantDatabaseRouter:
         - Everything else    → only on tenant DBs (not root).
         """
         root = self._root_db
-        if app_label in COMMON_APPS:
-            return True
-        if app_label == ROUTER_APP_LABEL:
+        if app_label in ROUTER_APP_LABEL:
             return db == root
         # For all other apps, allow only on non-root DBs.
         return db != root
