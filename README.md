@@ -452,4 +452,4 @@ MIT
 
 ## Stable Version
 
-django_tenants_router-1.0.6
+django_tenants_router-1.0.7
