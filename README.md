@@ -116,8 +116,10 @@ TENANT_ROUTER_CONFIG = {
     "TENANT_HEADER": "HTTP_X_TENANT_ID",       # HTTP header (Django META format)
     "TENANT_REQUIRED": False,                  # True → return 400/403 if no tenant
     "TENANT_EXEMPT_PATHS": ["/admin/", "/health/"],
-    "COMMON_APPS": ("admin", "auth", "contenttypes", "sessions") # Add the applications which you want migrate as common
+    "ROUTER_APPS": ("admin", "auth", "contenttypes", "sessions") # Add the applications which you want migrate in Routing/Handler
 }
+
+# "ROUTER_APPS" refers to the set of applications whose models are migrated only in the root (router-layer) database. All other applications will be migrated in the tenant databases.
 ```
 
 ### Run root DB migrations
